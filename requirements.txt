@@ -1,0 +1,14 @@
+# --- API / Backend ---
+fastapi>=0.110
+uvicorn>=0.27
+
+# --- Modelo y datos ---
+# scikit-learn PINEADO: modelo.pkl se entrenó con 1.7.2.
+# Si se carga con otra versión, joblib.load puede tirar warning o romper.
+scikit-learn==1.7.2
+pandas>=2.0
+joblib>=1.3
+
+# --- Notebook (EDA y gráficos) ---
+seaborn>=0.13
+matplotlib>=3.7
