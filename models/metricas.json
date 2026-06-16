@@ -1,0 +1,19 @@
+{
+  "modelo": "Random Forest (200 árboles, class_weight=balanced)",
+  "registros_entrenamiento": 5634,
+  "registros_test": 1409,
+  "accuracy": 0.7807,
+  "recall_churn": 0.4813,
+  "f1_churn": 0.5381,
+  "roc_auc": 0.8208,
+  "matriz_confusion": [
+    [
+      920,
+      115
+    ],
+    [
+      194,
+      180
+    ]
+  ]
+}
