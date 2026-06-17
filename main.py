@@ -17,6 +17,7 @@ import joblib
 import pandas as pd
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 # --- Cargamos el modelo una sola vez, al arrancar ---
@@ -61,6 +62,12 @@ class Cliente(BaseModel):
 @app.get("/")
 def inicio():
     return {"mensaje": "API de prediccion de churn activa. Ver /docs"}
+
+
+@app.get("/app")
+def frontend():
+    """Sirve la interfaz web desde el mismo servidor."""
+    return FileResponse(BASE / "index.html")
 
 
 @app.get("/metrics")

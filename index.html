@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Interfaz web para predecir la baja (churn) de clientes de telecomunicaciones usando Machine Learning." />
+  <title>Predicción de Churn — Telco</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* ================================================================
+       RESET & CUSTOM PROPERTIES
+       ================================================================ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      /* Background */
+      --bg-primary: #0a0a1a;
+      --bg-secondary: #12122a;
+      --bg-card: rgba(255, 255, 255, 0.04);
+      --bg-card-hover: rgba(255, 255, 255, 0.07);
+
+      /* Accent */
+      --accent: #00d4ff;
+      --accent-dim: #0099cc;
+      --accent-glow: rgba(0, 212, 255, 0.25);
+      --gradient-accent: linear-gradient(135deg, #0077ff 0%, #00d4ff 50%, #00ffc8 100%);
+      --gradient-header: linear-gradient(135deg, #0a0a1a 0%, #0d1b3e 50%, #0a2540 100%);
+
+      /* Text */
+      --text-primary: #eaeaf0;
+      --text-secondary: #9999b3;
+      --text-muted: #5c5c7a;
+
+      /* Borders */
+      --border: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(0, 212, 255, 0.3);
+
+      /* Status */
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+
+      /* Glass */
+      --glass-blur: 20px;
+      --glass-bg: rgba(18, 18, 42, 0.7);
+
+      /* Radius */
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --radius-xl: 28px;
+
+      /* Transitions */
+      --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-smooth: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-bounce: 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+      /* Fonts */
+      --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+      --font-heading: 'Outfit', 'Inter', sans-serif;
+    }
+
+    /* ================================================================
+       BASE
+       ================================================================ */
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    h1, h2, h3, h4 { font-family: var(--font-heading); font-weight: 700; }
+
+    a { color: var(--accent); text-decoration: none; }
+
+    /* ================================================================
+       LAYOUT
+       ================================================================ */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ================================================================
+       HEADER / HERO
+       ================================================================ */
+    .hero {
+      background: var(--gradient-header);
+      padding: 60px 0 50px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -20%;
+      width: 140%;
+      height: 200%;
+      background: radial-gradient(ellipse at 60% 40%, rgba(0, 119, 255, 0.12) 0%, transparent 60%),
+                  radial-gradient(ellipse at 30% 70%, rgba(0, 212, 255, 0.08) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    .hero-content { position: relative; z-index: 1; }
+
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 800;
+      background: var(--gradient-accent);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+
+    .hero p {
+      font-size: clamp(1rem, 2vw, 1.15rem);
+      color: var(--text-secondary);
+      max-width: 600px;
+      margin: 0 auto 24px;
+    }
+
+    /* API status badge */
+    .api-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 18px;
+      border-radius: 100px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(var(--glass-blur));
+      border: 1px solid var(--border);
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      transition: var(--transition-smooth);
+    }
+
+    .api-status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      transition: background var(--transition-smooth);
+    }
+
+    .api-status.connected .api-status-dot {
+      background: var(--success);
+      box-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+
+    .api-status.disconnected .api-status-dot {
+      background: var(--danger);
+      box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.3); }
+    }
+
+    /* ================================================================
+       SECTIONS
+       ================================================================ */
+    .section {
+      padding: 60px 0;
+    }
+
+    .section-title {
+      font-size: clamp(1.4rem, 3vw, 1.9rem);
+      margin-bottom: 8px;
+      letter-spacing: -0.01em;
+    }
+
+    .section-subtitle {
+      color: var(--text-secondary);
+      margin-bottom: 36px;
+      font-size: 0.95rem;
+    }
+
+    /* ================================================================
+       GLASS CARD
+       ================================================================ */
+    .card {
+      background: var(--bg-card);
+      backdrop-filter: blur(var(--glass-blur));
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      transition: background var(--transition-fast), border-color var(--transition-fast),
+                  transform var(--transition-fast);
+    }
+
+    .card:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-accent);
+      transform: translateY(-2px);
+    }
+
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-primary);
+    }
+
+    .card-title .icon {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-sm);
+      background: var(--accent-glow);
+      font-size: 1rem;
+    }
+
+    /* ================================================================
+       FORM
+       ================================================================ */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field label {
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .field select,
+    .field input {
+      appearance: none;
+      -webkit-appearance: none;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+      width: 100%;
+    }
+
+    .field select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239999b3' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 36px;
+      cursor: pointer;
+    }
+
+    .field select option {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+    }
+
+    .field input:focus,
+    .field select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .field input::placeholder { color: var(--text-muted); }
+
+    .field input[type="number"] {
+      -moz-appearance: textfield;
+    }
+    .field input[type="number"]::-webkit-inner-spin-button,
+    .field input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    /* ================================================================
+       BUTTONS
+       ================================================================ */
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 16px 40px;
+      border: none;
+      border-radius: var(--radius-md);
+      background: var(--gradient-accent);
+      color: #0a0a1a;
+      font-family: var(--font-heading);
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform var(--transition-fast), box-shadow var(--transition-fast),
+                  opacity var(--transition-fast);
+      box-shadow: 0 4px 24px var(--accent-glow);
+      letter-spacing: 0.01em;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 8px 32px rgba(0, 212, 255, 0.35);
+    }
+
+    .btn-primary:active { transform: translateY(0) scale(0.98); }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-primary .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2.5px solid rgba(10, 10, 26, 0.3);
+      border-top-color: #0a0a1a;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+
+    .btn-primary.loading .spinner { display: block; }
+    .btn-primary.loading .btn-text { display: none; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .form-actions {
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    /* ================================================================
+       RESULT PANEL
+       ================================================================ */
+    .result-panel {
+      margin-top: 40px;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity var(--transition-smooth), transform var(--transition-smooth);
+      pointer-events: none;
+    }
+
+    .result-panel.visible {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .result-inner {
+      display: flex;
+      align-items: center;
+      gap: 40px;
+      padding: 36px 40px;
+      border-radius: var(--radius-xl);
+      background: var(--bg-card);
+      backdrop-filter: blur(var(--glass-blur));
+      border: 1px solid var(--border);
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .result-inner.churn-yes { border-color: rgba(239, 68, 68, 0.4); }
+    .result-inner.churn-no  { border-color: rgba(34, 197, 94, 0.4); }
+
+    /* Gauge */
+    .gauge-wrap {
+      position: relative;
+      width: 160px;
+      height: 160px;
+      flex-shrink: 0;
+    }
+
+    .gauge-svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+
+    .gauge-bg {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.06);
+      stroke-width: 10;
+    }
+
+    .gauge-fill {
+      fill: none;
+      stroke-width: 10;
+      stroke-linecap: round;
+      transition: stroke-dasharray 1s cubic-bezier(0.4, 0, 0.2, 1),
+                  stroke 0.5s ease;
+    }
+
+    .gauge-label {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .gauge-percent {
+      font-family: var(--font-heading);
+      font-size: 2.4rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .gauge-caption {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .result-info {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .result-verdict {
+      font-family: var(--font-heading);
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .result-verdict .verdict-icon {
+      font-size: 1.4rem;
+    }
+
+    .result-message {
+      color: var(--text-secondary);
+      font-size: 1rem;
+      line-height: 1.5;
+    }
+
+    /* ================================================================
+       METRICS DASHBOARD
+       ================================================================ */
+    .metrics-section {
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+
+    .kpi-card {
+      text-align: center;
+      padding: 30px 20px;
+    }
+
+    .kpi-value {
+      font-family: var(--font-heading);
+      font-size: 2.6rem;
+      font-weight: 800;
+      background: var(--gradient-accent);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.1;
+    }
+
+    .kpi-label {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-top: 8px;
+    }
+
+    /* Confusion matrix */
+    .matrix-wrap {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .matrix-title {
+      text-align: center;
+      font-size: 1.05rem;
+      margin-bottom: 16px;
+      color: var(--text-secondary);
+    }
+
+    .matrix-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 6px;
+    }
+
+    .matrix-table th,
+    .matrix-table td {
+      padding: 16px 12px;
+      text-align: center;
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+    }
+
+    .matrix-table th {
+      color: var(--text-muted);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .matrix-table th.corner { background: transparent; }
+
+    .matrix-table th.col-header {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .matrix-table th.row-header {
+      background: rgba(255, 255, 255, 0.03);
+      text-align: right;
+      padding-right: 16px;
+    }
+
+    .matrix-table td {
+      font-family: var(--font-heading);
+      font-size: 1.4rem;
+      font-weight: 700;
+    }
+
+    .matrix-table .cell-tp { background: rgba(34, 197, 94, 0.15); color: var(--success); }
+    .matrix-table .cell-tn { background: rgba(34, 197, 94, 0.10); color: #6ee7a0; }
+    .matrix-table .cell-fp { background: rgba(239, 68, 68, 0.10); color: #f87171; }
+    .matrix-table .cell-fn { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+
+    .model-info {
+      text-align: center;
+      margin-top: 28px;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    .model-info span { color: var(--text-secondary); }
+
+    /* ================================================================
+       FOOTER
+       ================================================================ */
+    .footer {
+      text-align: center;
+      padding: 32px 24px;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ================================================================
+       LOADING SKELETON
+       ================================================================ */
+    .skeleton {
+      background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s ease-in-out infinite;
+      border-radius: var(--radius-sm);
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* ================================================================
+       RESPONSIVE
+       ================================================================ */
+    @media (max-width: 768px) {
+      .hero { padding: 40px 0 36px; }
+      .section { padding: 40px 0; }
+      .form-grid { grid-template-columns: 1fr; gap: 16px; }
+      .card { padding: 20px; }
+      .result-inner { padding: 28px 24px; gap: 24px; }
+      .gauge-wrap { width: 130px; height: 130px; }
+      .gauge-percent { font-size: 2rem; }
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+      .kpi-card { padding: 20px 12px; }
+      .kpi-value { font-size: 2rem; }
+    }
+
+    @media (max-width: 480px) {
+      .kpi-grid { grid-template-columns: 1fr; }
+      .container { padding: 0 16px; }
+    }
+
+    /* ================================================================
+       ERROR TOAST
+       ================================================================ */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: rgba(239, 68, 68, 0.95);
+      color: white;
+      padding: 14px 24px;
+      border-radius: var(--radius-md);
+      font-size: 0.9rem;
+      z-index: 1000;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: transform var(--transition-bounce), opacity var(--transition-fast);
+      max-width: 400px;
+      backdrop-filter: blur(10px);
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ============================================================
+       HERO / HEADER
+       ============================================================ -->
+  <header class="hero">
+    <div class="container hero-content">
+      <h1>Predicción de Churn</h1>
+      <p>Detectá clientes con alta probabilidad de baja para actuar antes. Modelo de Machine Learning entrenado sobre datos reales de telecomunicaciones.</p>
+      <div id="api-status" class="api-status">
+        <span class="api-status-dot"></span>
+        <span id="api-status-text">Verificando API…</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============================================================
+       FORMULARIO DE PREDICCIÓN
+       ============================================================ -->
+  <section class="section">
+    <div class="container">
+      <h2 class="section-title">🔍 Predecir churn de un cliente</h2>
+      <p class="section-subtitle">Completá los datos del cliente y el modelo predecirá si se dará de baja.</p>
+
+      <form id="predict-form" autocomplete="off">
+        <div class="form-grid">
+
+          <!-- Card: Datos personales -->
+          <div class="card">
+            <div class="card-title"><span class="icon">👤</span> Datos personales</div>
+            <div class="field">
+              <label for="gender">Género</label>
+              <select id="gender" name="gender" required>
+                <option value="Female">Femenino</option>
+                <option value="Male">Masculino</option>
+              </select>
+            </div>
+            <div class="field" style="margin-top:14px">
+              <label for="SeniorCitizen">Adulto mayor</label>
+              <select id="SeniorCitizen" name="SeniorCitizen" required>
+                <option value="0">No</option>
+                <option value="1">Sí</option>
+              </select>
+            </div>
+            <div class="field" style="margin-top:14px">
+              <label for="Partner">Pareja</label>
+              <select id="Partner" name="Partner" required>
+                <option value="Yes">Sí</option>
+                <option value="No" selected>No</option>
+              </select>
+            </div>
+            <div class="field" style="margin-top:14px">
+              <label for="Dependents">Dependientes</label>
+              <select id="Dependents" name="Dependents" required>
+                <option value="Yes">Sí</option>
+                <option value="No" selected>No</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Card: Servicios de telefonía -->
+          <div class="card">
+            <div class="card-title"><span class="icon">📞</span> Telefonía</div>
+            <div class="field">
+              <label for="PhoneService">Servicio telefónico</label>
+              <select id="PhoneService" name="PhoneService" required>
+                <option value="Yes" selected>Sí</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+            <div class="field" style="margin-top:14px">
+              <label for="MultipleLines">Líneas múltiples</label>
+              <select id="MultipleLines" name="MultipleLines" required>
+                <option value="Yes">Sí</option>
+                <option value="No" selected>No</option>
+                <option value="No phone service">Sin servicio telefónico</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Card: Servicios de internet -->
+          <div class="card">
+            <div class="card-title"><span class="icon">🌐</span> Internet</div>
+            <div class="field">
+              <label for="InternetService">Servicio de internet</label>
+              <select id="InternetService" name="InternetService" required>
+                <option value="DSL">DSL</option>
+                <option value="Fiber optic" selected>Fibra óptica</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+            <div class="field" style="margin-top:14px">
+              <label for="OnlineSecurity">Seguridad online</label>
+              <select id="OnlineSecurity" name="OnlineSecurity" required>
+                <option value="Yes">Sí</option>
+                <option value="No" selected>No</option>
+                <option value="No internet service">Sin internet</option>
+              </select>
+            </div>
+            <div class="field" style="margin-top:14px">
+              <label for="OnlineBackup">Backup online</label>
+              <select id="OnlineBackup" name="OnlineBackup" required>
+                <option value="Yes">Sí</option>
+                <option value="No" selected>No</option>
+                <option value="No internet service">Sin internet</option>
+              </select>
+            </div>
+            <div class="field" style="margin-top:14px">
+              <label for="DeviceProtection">Protección de equipo</label>
+              <select id="DeviceProtection" name="DeviceProtection" required>
+                <option value="Yes">Sí</option>
+                <option value="No" selected>No</option>
+                <option value="No internet service">Sin internet</option>
+              </select>
+            </div>
+            <div class="field" style="margin-top:14px">
+              <label for="TechSupport">Soporte técnico</label>
+              <select id="TechSupport" name="TechSupport" required>
+                <option value="Yes">Sí</option>
+                <option value="No" selected>No</option>
+                <option value="No internet service">Sin internet</option>
+              </select>
+            </div>
+            <div class="field" style="margin-top:14px">
+              <label for="StreamingTV">Streaming TV</label>
+              <select id="StreamingTV" name="StreamingTV" required>
+                <option value="Yes">Sí</option>
+                <option value="No" selected>No</option>
+                <option value="No internet service">Sin internet</option>
+              </select>
+            </div>
+            <div class="field" style="margin-top:14px">
+              <label for="StreamingMovies">Streaming películas</label>
+              <select id="StreamingMovies" name="StreamingMovies" required>
+                <option value="Yes">Sí</option>
+                <option value="No" selected>No</option>
+                <option value="No internet service">Sin internet</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Card: Contrato y facturación -->
+          <div class="card">
+            <div class="card-title"><span class="icon">📄</span> Contrato y facturación</div>
+            <div class="field">
+              <label for="Contract">Tipo de contrato</label>
+              <select id="Contract" name="Contract" required>
+                <option value="Month-to-month" selected>Mes a mes</option>
+                <option value="One year">Un año</option>
+                <option value="Two year">Dos años</option>
+              </select>
+            </div>
+            <div class="field" style="margin-top:14px">
+              <label for="PaperlessBilling">Factura digital</label>
+              <select id="PaperlessBilling" name="PaperlessBilling" required>
+                <option value="Yes" selected>Sí</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+            <div class="field" style="margin-top:14px">
+              <label for="PaymentMethod">Método de pago</label>
+              <select id="PaymentMethod" name="PaymentMethod" required>
+                <option value="Electronic check" selected>Cheque electrónico</option>
+                <option value="Mailed check">Cheque por correo</option>
+                <option value="Bank transfer (automatic)">Transferencia bancaria (auto)</option>
+                <option value="Credit card (automatic)">Tarjeta de crédito (auto)</option>
+              </select>
+            </div>
+            <div class="field" style="margin-top:14px">
+              <label for="tenure">Antigüedad (meses)</label>
+              <input type="number" id="tenure" name="tenure" min="0" max="72" step="1" value="1" required />
+            </div>
+            <div class="field" style="margin-top:14px">
+              <label for="MonthlyCharges">Cargo mensual (USD)</label>
+              <input type="number" id="MonthlyCharges" name="MonthlyCharges" min="0" step="0.01" value="70.35" required />
+            </div>
+            <div class="field" style="margin-top:14px">
+              <label for="TotalCharges">Cargo total acumulado (USD)</label>
+              <input type="number" id="TotalCharges" name="TotalCharges" min="0" step="0.01" value="70.35" required />
+            </div>
+          </div>
+
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary" id="btn-predict">
+            <span class="btn-text">⚡ Predecir</span>
+            <span class="spinner"></span>
+          </button>
+        </div>
+      </form>
+
+      <!-- Result panel -->
+      <div id="result-panel" class="result-panel">
+        <div id="result-inner" class="result-inner">
+          <!-- Gauge -->
+          <div class="gauge-wrap">
+            <svg class="gauge-svg" viewBox="0 0 120 120">
+              <circle class="gauge-bg" cx="60" cy="60" r="50" />
+              <circle id="gauge-fill" class="gauge-fill" cx="60" cy="60" r="50"
+                      stroke-dasharray="0 314.16" stroke="var(--text-muted)" />
+            </svg>
+            <div class="gauge-label">
+              <span id="gauge-percent" class="gauge-percent">0%</span>
+              <span class="gauge-caption">Prob. churn</span>
+            </div>
+          </div>
+          <!-- Info -->
+          <div class="result-info">
+            <div id="result-verdict" class="result-verdict"></div>
+            <p id="result-message" class="result-message"></p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============================================================
+       DASHBOARD DE MÉTRICAS
+       ============================================================ -->
+  <section class="section metrics-section">
+    <div class="container">
+      <h2 class="section-title">📊 Rendimiento del modelo</h2>
+      <p class="section-subtitle">Métricas calculadas sobre el conjunto de test (datos no vistos durante el entrenamiento).</p>
+
+      <div id="kpi-grid" class="kpi-grid">
+        <div class="card kpi-card">
+          <div id="kpi-accuracy" class="kpi-value skeleton" style="height:42px;width:100px;margin:0 auto">&nbsp;</div>
+          <div class="kpi-label">Accuracy</div>
+        </div>
+        <div class="card kpi-card">
+          <div id="kpi-recall" class="kpi-value skeleton" style="height:42px;width:100px;margin:0 auto">&nbsp;</div>
+          <div class="kpi-label">Recall (Churn)</div>
+        </div>
+        <div class="card kpi-card">
+          <div id="kpi-f1" class="kpi-value skeleton" style="height:42px;width:100px;margin:0 auto">&nbsp;</div>
+          <div class="kpi-label">F1 Score (Churn)</div>
+        </div>
+        <div class="card kpi-card">
+          <div id="kpi-roc" class="kpi-value skeleton" style="height:42px;width:100px;margin:0 auto">&nbsp;</div>
+          <div class="kpi-label">ROC AUC</div>
+        </div>
+      </div>
+
+      <div id="matrix-wrap" class="matrix-wrap" style="display:none">
+        <div class="matrix-title">Matriz de confusión</div>
+        <table class="matrix-table">
+          <thead>
+            <tr>
+              <th class="corner"></th>
+              <th class="col-header">Pred: No churn</th>
+              <th class="col-header">Pred: Churn</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th class="row-header">Real: No churn</th>
+              <td id="cell-tn" class="cell-tn">—</td>
+              <td id="cell-fp" class="cell-fp">—</td>
+            </tr>
+            <tr>
+              <th class="row-header">Real: Churn</th>
+              <td id="cell-fn" class="cell-fn">—</td>
+              <td id="cell-tp" class="cell-tp">—</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div id="model-info" class="model-info" style="display:none"></div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       FOOTER
+       ============================================================ -->
+  <footer class="footer">
+    <div class="container">
+      Trabajo Práctico Final — Taller de Lenguajes de Programación III · Python para Ciencia de Datos
+    </div>
+  </footer>
+
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
+
+  <!-- ============================================================
+       JAVASCRIPT
+       ============================================================ -->
+  <script>
+    // ── Config ──────────────────────────────────────────────────
+    const API_BASE = window.location.hostname === ''
+      ? 'http://127.0.0.1:8000'                // abierto con doble clic (file://)
+      : `${window.location.origin}`;            // servido desde FastAPI
+
+    const GAUGE_CIRCUMFERENCE = 2 * Math.PI * 50; // ~314.16
+
+    // ── DOM refs ────────────────────────────────────────────────
+    const $ = (sel) => document.querySelector(sel);
+    const apiStatusEl   = $('#api-status');
+    const apiStatusText = $('#api-status-text');
+    const form          = $('#predict-form');
+    const btnPredict    = $('#btn-predict');
+    const resultPanel   = $('#result-panel');
+    const resultInner   = $('#result-inner');
+    const gaugeFill     = $('#gauge-fill');
+    const gaugePercent  = $('#gauge-percent');
+    const resultVerdict = $('#result-verdict');
+    const resultMessage = $('#result-message');
+    const toastEl       = $('#toast');
+
+    // ── API Status ──────────────────────────────────────────────
+    async function checkApiStatus() {
+      try {
+        const res = await fetch(`${API_BASE}/`, { signal: AbortSignal.timeout(4000) });
+        if (res.ok) {
+          apiStatusEl.className = 'api-status connected';
+          apiStatusText.textContent = 'API conectada';
+          return true;
+        }
+      } catch { /* ignore */ }
+      apiStatusEl.className = 'api-status disconnected';
+      apiStatusText.textContent = 'API desconectada';
+      return false;
+    }
+
+    // Check now, then every 30s
+    checkApiStatus();
+    setInterval(checkApiStatus, 30000);
+
+    // ── Load Metrics ────────────────────────────────────────────
+    async function loadMetrics() {
+      try {
+        const res  = await fetch(`${API_BASE}/metrics`);
+        const data = await res.json();
+
+        animateKpi('kpi-accuracy', data.accuracy, true);
+        animateKpi('kpi-recall',   data.recall_churn, true);
+        animateKpi('kpi-f1',       data.f1_churn, true);
+        animateKpi('kpi-roc',      data.roc_auc, true);
+
+        // Confusion matrix
+        const cm = data.matriz_confusion; // [[TN, FP],[FN, TP]]
+        if (cm) {
+          $('#cell-tn').textContent = cm[0][0];
+          $('#cell-fp').textContent = cm[0][1];
+          $('#cell-fn').textContent = cm[1][0];
+          $('#cell-tp').textContent = cm[1][1];
+          $('#matrix-wrap').style.display = '';
+        }
+
+        // Model info
+        const infoEl = $('#model-info');
+        infoEl.innerHTML = `<span>${data.modelo}</span> · Entrenamiento: <span>${data.registros_entrenamiento.toLocaleString()}</span> registros · Test: <span>${data.registros_test.toLocaleString()}</span> registros`;
+        infoEl.style.display = '';
+
+      } catch (err) {
+        console.warn('No se pudieron cargar las métricas:', err);
+      }
+    }
+
+    loadMetrics();
+
+    // ── KPI animation ───────────────────────────────────────────
+    function animateKpi(id, targetValue, isPercentage) {
+      const el = document.getElementById(id);
+      el.classList.remove('skeleton');
+      el.style.height = '';
+      el.style.width = '';
+
+      const target = isPercentage ? targetValue * 100 : targetValue;
+      const suffix = isPercentage ? '%' : '';
+      const decimals = isPercentage ? 1 : 2;
+      let start = 0;
+      const duration = 1200;
+      const startTime = performance.now();
+
+      function step(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        // ease out cubic
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const current = start + (target - start) * eased;
+        el.textContent = current.toFixed(decimals) + suffix;
+        if (progress < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+
+    // ── Gauge animation ─────────────────────────────────────────
+    function animateGauge(probability) {
+      const percent = Math.round(probability * 100);
+      const dashLen = GAUGE_CIRCUMFERENCE * probability;
+
+      // Color
+      let color;
+      if (percent < 30)      color = 'var(--success)';
+      else if (percent < 60) color = 'var(--warning)';
+      else                   color = 'var(--danger)';
+
+      gaugeFill.style.stroke = color;
+      gaugeFill.setAttribute('stroke-dasharray', `${dashLen} ${GAUGE_CIRCUMFERENCE}`);
+
+      // Animate percent text
+      const duration = 900;
+      const startTime = performance.now();
+      let startVal = 0;
+
+      function step(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const current = Math.round(startVal + (percent - startVal) * eased);
+        gaugePercent.textContent = current + '%';
+        gaugePercent.style.color = color;
+        if (progress < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+
+    // ── Form submit ─────────────────────────────────────────────
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      resultPanel.classList.remove('visible');
+
+      btnPredict.classList.add('loading');
+      btnPredict.disabled = true;
+
+      const fd = new FormData(form);
+      const payload = {};
+      for (const [key, val] of fd.entries()) {
+        // Numbers
+        if (['tenure', 'MonthlyCharges', 'TotalCharges', 'SeniorCitizen'].includes(key)) {
+          payload[key] = key === 'SeniorCitizen' ? parseInt(val, 10) : parseFloat(val);
+        } else {
+          payload[key] = val;
+        }
+      }
+
+      // Validations
+      if (payload.tenure < 0 || isNaN(payload.tenure)) {
+        showToast('La antigüedad debe ser ≥ 0.');
+        btnPredict.classList.remove('loading');
+        btnPredict.disabled = false;
+        return;
+      }
+      if (payload.MonthlyCharges <= 0 || isNaN(payload.MonthlyCharges)) {
+        showToast('El cargo mensual debe ser mayor a 0.');
+        btnPredict.classList.remove('loading');
+        btnPredict.disabled = false;
+        return;
+      }
+
+      try {
+        const res  = await fetch(`${API_BASE}/predict`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => null);
+          throw new Error(errData?.detail || `Error ${res.status}`);
+        }
+
+        const data = await res.json();
+
+        // Update result
+        resultInner.className = 'result-inner ' + (data.churn ? 'churn-yes' : 'churn-no');
+
+        const verdictIcon = data.churn ? '⚠️' : '✅';
+        const verdictText = data.churn ? 'Alta probabilidad de baja' : 'Cliente probablemente se queda';
+        resultVerdict.innerHTML = `<span class="verdict-icon">${verdictIcon}</span> ${verdictText}`;
+        resultVerdict.style.color = data.churn ? 'var(--danger)' : 'var(--success)';
+
+        resultMessage.textContent = data.mensaje;
+
+        animateGauge(data.probabilidad_churn);
+
+        // Show panel
+        resultPanel.classList.add('visible');
+        resultPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+      } catch (err) {
+        showToast('Error al conectar con la API: ' + err.message);
+      } finally {
+        btnPredict.classList.remove('loading');
+        btnPredict.disabled = false;
+      }
+    });
+
+    // ── Toast ───────────────────────────────────────────────────
+    let toastTimer;
+    function showToast(msg) {
+      toastEl.textContent = msg;
+      toastEl.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toastEl.classList.remove('show'), 4000);
+    }
+  </script>
+</body>
+</html>

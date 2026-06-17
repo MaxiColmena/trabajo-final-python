@@ -64,7 +64,8 @@ uvicorn main:app --reload
 #    Documentación interactiva: http://127.0.0.1:8000/docs
 
 # 4. Abrir la interfaz
-#    Doble clic en index.html (con la API corriendo)
+#    http://127.0.0.1:8000/app  (servida desde la API)
+#    o doble clic en index.html (también funciona, usa CORS)
 ```
 
 ## Endpoints de la API
