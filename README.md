@@ -11,6 +11,8 @@ Solución integral de Machine Learning que predice si un cliente de una empresa 
 telecomunicaciones se va a dar de baja (churn), cubriendo el ciclo completo:
 análisis exploratorio → preprocesamiento → modelado → API → interfaz web.
 
+🌐 **Deploy en producción:** [https://trabajo-final-python-b6c7.onrender.com/app](https://trabajo-final-python-b6c7.onrender.com/app)
+
 ## El problema
 
 Retener un cliente cuesta mucho menos que conseguir uno nuevo. El modelo permite
