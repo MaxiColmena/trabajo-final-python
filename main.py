@@ -70,6 +70,12 @@ def frontend():
     return FileResponse(BASE / "index.html")
 
 
+@app.get("/sorpresa")
+def sorpresa():
+    """Sirve la pagina sorpresa del Dia del Padre."""
+    return FileResponse(BASE / "sorpresa.html")
+
+
 @app.get("/metrics")
 def metricas():
     """Devuelve las metricas de evaluacion del modelo (calculadas sobre el
